@@ -122,12 +122,14 @@ class TransferBase(object):
 				logging.error('more than one user use the same port [%s]' % (port,))
 				continue
 
+			if 'protocol' in cfg and 'protocol_param' in cfg and common.to_str(cfg['protocol']) in obfs.mu_protocol():
+				if '#' in common.to_str(cfg['protocol_param']):
+					mu_servers[port] = passwd
+					allow = True
+
 			if allow:
-				allow_users[port] = passwd
-				if 'protocol' in cfg and 'protocol_param' in cfg and common.to_str(cfg['protocol']) in obfs.mu_protocol():
-					if '#' in common.to_str(cfg['protocol_param']):
-						mu_servers[port] = passwd
-						del allow_users[port]
+				if port not in mu_servers:
+					allow_users[port] = cfg
 
 				cfgchange = False
 				if port in ServerPool.get_instance().tcp_servers_pool:
@@ -139,7 +141,7 @@ class TransferBase(object):
 				if not cfgchange and port in ServerPool.get_instance().tcp_ipv6_servers_pool:
 					relay = ServerPool.get_instance().tcp_ipv6_servers_pool[port]
 					for name in merge_config_keys:
-						if name in cfg and not self.cmp(cfg[name], relay._config[name]):
+						if (name in cfg) and ((name not in relay._config) or not self.cmp(cfg[name], relay._config[name])):
 							cfgchange = True
 							break
 
